@@ -125,7 +125,172 @@ class WhatsAppController {
             let formData = new FormData(this.el.formPanelAddContact);
         });
 
+        //elementos das conversas e arquivos
 
+        this.el.contactsMessagesList.querySelectorAll(".contact-item").forEach(item=>{
+            item.on("click", e=>{
+                this.el.home.hide();
+                this.el.main.css({
+                    display: "flex"
+                });
+            });
+        })
+
+        this.el.btnAttach.on("click", e=>{
+            e.stopPropagation();
+            this.el.menuAttach.addClass("open");
+            document.addEventListener("click", this.closeMenuAttach.bind(this));
+        });
+
+        //botao foto
+
+        this.el.btnAttachPhoto.on("click", e=>{
+            this.el.inputPhoto.click();
+        });
+
+        this.el.inputPhoto.on("change", e=>{
+            console.log(this.el.inputPhoto.files);
+
+            [...this.el.inputPhoto.files].forEach(file=>{
+                console.log(file);
+            });
+        });
+
+        //botao camera
+
+        this.el.btnAttachCamera.on("click", e=>{
+            this.closeAllMainPanel();
+            this.el.panelCamera.addClass("open");
+            this.el.panelCamera.css({
+                "height" : "calc(100% - 120px)"
+            });
+        });
+
+        this.el.btnClosePanelCamera.on("click", e=>{
+            
+            this.closeAllMainPanel();
+            this.el.panelMessagesContainer.show();
+        })
+
+        this.el.btnTakePicture.on("click", e=>{
+            console.log("take picture");
+        })
+
+        //botao documento
+        this.el.btnAttachDocument.on("click", e=>{
+            this.closeAllMainPanel();
+            this.el.panelDocumentPreview.addClass("open");
+            this.el.panelDocumentPreview.css({
+                "height" : "calc(100% - 120px)"
+            });
+        });
+
+        this.el.btnClosePanelDocumentPreview.on("click", e=>{
+            this.closeAllMainPanel();
+            this.el.panelMessagesContainer.show();
+        });
+
+        this.el.btnSendDocument.on("click", e=>{
+            console.log("send document");
+        });
+
+        //botao contatos
+
+        this.el.btnAttachContact.on("click", e=>{
+            this.el.modalContacts.show();
+        });
+
+        this.el.btnCloseModalContacts.on("click", e=>{
+            this.el.modalContacts.hide();
+        });
+
+        //botao microfone
+        this.el.btnSendMicrophone.on("click", e=>{
+            this.el.recordMicrophone.show();
+            this.el.btnSendMicrophone.hide();
+            this.startRecordMicrophoneTime();
+        });
+
+        this.el.btnCancelMicrophone.on("click", e=>{
+            this.closeRecordMicrophone();
+        });
+
+        this.el.btnFinishMicrophone.on("click", e=>{
+            this.closeRecordMicrophone();
+        });
+
+        //input text
+        this.el.inputText.on("keypress", e=>{
+            if(e.key === "Enter" && !e.ctrlKey){
+                e.preventDefault();
+            }
+        });
+
+        
+        this.el.inputText.on("keyup", e=>{
+            if(this.el.inputText.innerHTML.length){
+                this.el.inputPlaceholder.hide();
+                this.el.btnSendMicrophone.hide();
+                this.el.btnSend.show();
+            } else {
+                this.el.inputPlaceholder.show();
+                this.el.btnSendMicrophone.show();
+                this.el.btnSend.hide();
+            }
+        });
+
+        this.el.btnSend.on("click", e=>{
+            console.log(this.el.inputText.innerHTML);
+        });
+
+        this.el.btnEmojis.on("click", e=>{
+            this.el.panelEmojis.toggleClass("open");
+        });
+
+        this.el.panelEmojis.querySelectorAll(".emojik").forEach(emoji=>{
+            emoji.on("click", e=>{
+                let img = this.el.imgEmojiDefault.cloneNode();
+                img.style.cssText = emoji.style.cssText;
+                img.dataset.unicode = emoji.dataset.unicode;
+                img.alt = emoji.dataset.unicode;
+
+                emoji.classList.forEach(name=>{
+                    img.classList.add(name);
+                });
+
+                this.el.inputText.appendChild(img);
+                let cursor = window.getSelection();
+                this.el.inputText.dispatchEvent(new Event("keyup"));
+            });
+        });
+        
+
+    }
+
+    startRecordMicrophoneTime(){
+        let start = Date.now();
+        this._recordMicrophoneInterval = setInterval(()=>{
+
+            this.el.recordMicrophoneTimer.innerHTML =  Format.toTime(Date.now() - start);
+
+        }, 100);
+    }
+
+    closeRecordMicrophone(){
+        this.el.recordMicrophone.hide();
+        this.el.btnSendMicrophone.show();
+        clearInterval(this._recordMicrophoneInterval);
+    }
+
+    closeAllMainPanel(){
+        this.el.panelMessagesContainer.hide();
+        this.el.panelDocumentPreview.removeClass("open");
+        this.el.panelCamera.removeClass("open");
+    }
+
+    closeMenuAttach(e){
+        document.removeEventListener("click", this.closeMenuAttach);
+        this.el.menuAttach.removeClass("open");
     }
 
 
