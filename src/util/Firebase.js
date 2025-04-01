@@ -18,13 +18,13 @@ export class Firebase {
     init(){
           // Initialize Firebase
 
-          if(!this._initialized){
+          if(!window._initializedFirebase){
             firebase.initializeApp(this._config);
 
             firebase.firestore().settings({
                 timestampsInSnapshots: true
             })
-            this._initialized = true;
+            window._initializedFirebase = true;
           }
           
     }
@@ -47,7 +47,10 @@ export class Firebase {
                 let token = result.credential.accessToken;
                 let user = result.user;
 
-                s(user, token);
+                s({
+                    user,
+                    token
+                });
             })
             .catch(err=>{
                 console.log(err);
