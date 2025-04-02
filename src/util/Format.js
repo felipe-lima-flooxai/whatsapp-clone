@@ -19,7 +19,23 @@ export class Format {
         } else {
             return `${minutes}:${seconds.toString().padStart(2, "0")}`;
         }
+    }
 
+    static fbTimeStampToTime(timeStamp) {
+
+        return (timeStamp && typeof timeStamp.toDate === 'function') ? Format.dateToTime(timeStamp.toDate()) : '';
+
+    }
+
+    static dateToTime(date, locale = 'pt-BR') {
+
+        let string = '';
+
+        if (date && date instanceof Date) {
+            string = date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+        }
+
+        return string;
 
     }
 }
