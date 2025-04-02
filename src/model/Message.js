@@ -8,6 +8,9 @@ export class Message extends Model{
 
     }
 
+    get id() { return this._data.id; }
+    set id(value) { return this._data.id = value; }
+
     get content() { return this._data.content; }
     set content(value) { this._data.content = value; }
 
@@ -261,7 +264,7 @@ export class Message extends Model{
 
             default:
                 div.innerHTML = `
-                    <div class="font-style _3DFk6 tail">
+                    <div class="font-style _3DFk6 tail" id="_${this.id}">
                         <span class="tail-container"></span>
                         <span class="tail-container highlight"></span>
                         <div class="Tkt2p">
@@ -289,12 +292,12 @@ export class Message extends Model{
     }
 
     static send(chatId, from, type, content){
-        Message.getRef(chatId).add({
+        return Message.getRef(chatId).add({
             content,
-            from,
-            type,
             timeStamp: new Date(),
-            status: 'wait'
+            status: 'wait',
+            from,
+            type
         })
     }
 
