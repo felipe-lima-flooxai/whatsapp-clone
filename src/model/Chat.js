@@ -10,7 +10,7 @@ export class Chat extends Model{
     get users() { return this._data.users; }
     set users(value) { this._data.users = value; }
 
-    get timeStamp() { this._data.timeStamp}
+    get timeStamp() { return this._data.timeStamp}
     set timeStamp(value) { this._data.timeStamp = value}
 
     static getRef(){

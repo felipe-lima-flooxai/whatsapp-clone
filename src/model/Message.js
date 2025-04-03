@@ -2,6 +2,7 @@ import { Model } from "./Model";
 import { Format } from '../util/Format';
 import { Firebase } from './../util/Firebase'
 
+
 export class Message extends Model{
     constructor(){
         super();
@@ -135,6 +136,15 @@ export class Message extends Model{
                         </div>
                     </div>
                 `;
+
+                div.querySelector(".message-photo").on("load", e=>{
+                    div.querySelector(".message-photo").show();
+                    div.querySelector("._34Olu").hide();
+                    div.querySelector("._3v3PK").css({
+                        height: "auto"
+                    });
+                });
+
                 break;
 
             case "document":
@@ -178,6 +188,11 @@ export class Message extends Model{
                             </div>
                         </div>
                 `;
+
+                div.on("click", e=>{
+                    window.open(this.content);
+                })
+
                 break;
 
             case "audio":
@@ -284,21 +299,124 @@ export class Message extends Model{
                 break;
         }
 
-        let className = (me) ? "message-out" : "message-in";
+        let className = "message-in";
+
+        if(me){
+
+            className = "message-out"
+
+            div.querySelector(".message-time").parentElement.appendChild(this.getStatusViewElement()); 
+        }
 
         div.firstElementChild.classList.add(className);
 
         return div;
     }
 
+    static upload(file, from){
+
+        return new Promise((s, f)=>{
+
+            let uploadTask = Firebase
+                .hd()
+                .ref(from)
+                .child(Date.now() + '_' + file.name)
+                .put(file);
+
+            uploadTask.on('state_changed', snapshot => {
+
+                console.log('upload', snapshot);
+
+            }, err => {
+
+                f(err);
+
+            }, () => {
+
+                s(uploadTask.snapshot);
+
+            });
+
+        });
+
+    }
+
     static send(chatId, from, type, content){
-        return Message.getRef(chatId).add({
-            content,
-            timeStamp: new Date(),
-            status: 'wait',
-            from,
-            type
+        return new Promise((s, f)=>{
+            Message.getRef(chatId).add({
+                content,
+                timeStamp: new Date(),
+                status: 'wait',
+                from,
+                type
+            }).then(result=>{
+                let docRef = result.parent.doc(result.id);
+
+                docRef.set({status: "sent"}, {merge : true}).then(()=>{
+                    s(docRef);
+                })
+            });
+        });
+    }
+
+    static sendImage(chatId, from, file){
+
+        return new Promise((s, f)=>{
+            Message.upload(file, from).then(snapshot=>{
+                Message.send(chatId, from, 'image', snapshot.downloadURL)
+                .then(()=>{
+                    s();
+                });
+            })
         })
+
+    }
+
+    static sendDocument(chatId, from, file, filePreview, info){
+
+        Message.send(chatId, from, "document", "").then(msgRef=>{
+
+                Message.upload(file, from).then(snapshot=>{
+                    
+                    let downloadFile = snapshot.downloadURL;
+
+                    if(filePreview){
+                        
+                        Message.upload(filePreview, from).then(snapshot2=>{
+    
+                            let downloadPreview = snapshot2.downloadURL;
+        
+                            msgRef.set({
+                                content: downloadFile,
+                                preview: downloadPreview,
+                                filename: file.name,
+                                size: file.size,
+                                fileType: file.type,
+                                status: 'sent',
+                                info
+                            }, {merge:true});
+                        })
+
+                    } else {
+
+                        msgRef.set({
+                            content: downloadFile,
+                            filename: file.name,
+                            size: file.size,
+                            fileType: file.type,
+                            status: 'sent'
+                        }, {merge:true});
+
+                    }
+    
+                    
+    
+                });
+
+        });
+
+        
+
     }
 
     static getRef(chatId){
@@ -306,4 +424,59 @@ export class Message extends Model{
         return Firebase.db().collection('chats').doc(chatId).collection('messages');
 
     }
+
+    getStatusViewElement(){
+
+        let div = document.createElement('div');
+
+        div.classList.add('message-status');
+
+        switch (this.status) {
+
+            case 'wait':
+                div.innerHTML = `
+                        <span data-icon="msg-time">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 15" width="16" height="15">
+                                <path fill="#859479" d="M9.75 7.713H8.244V5.359a.5.5 0 0 0-.5-.5H7.65a.5.5 0 0 0-.5.5v2.947a.5.5 0 0 0 .5.5h.094l.003-.001.003.002h2a.5.5 0 0 0 .5-.5v-.094a.5.5 0 0 0-.5-.5zm0-5.263h-3.5c-1.82 0-3.3 1.48-3.3 3.3v3.5c0 1.82 1.48 3.3 3.3 3.3h3.5c1.82 0 3.3-1.48 3.3-3.3v-3.5c0-1.82-1.48-3.3-3.3-3.3zm2 6.8a2 2 0 0 1-2 2h-3.5a2 2 0 0 1-2-2v-3.5a2 2 0 0 1 2-2h3.5a2 2 0 0 1 2 2v3.5z"></path>
+                            </svg>
+                        </span>
+                    `;
+                break;
+
+            case 'sent':
+                div.innerHTML = `
+                        <span data-icon="msg-check" class="">
+                            <svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 15" width="16" height="15">
+                                <path fill="#92A58C" d="M10.91 3.316l-.478-.372a.365.365 0 0 0-.51.063L4.566 9.879a.32.32 0 0 1-.484.033L1.891 7.769a.366.366 0 0 0-.515.006l-.423.433a.364.364 0 0 0 .006.514l3.258 3.185c.143.14.361.125.484-.033l6.272-8.048a.365.365 0 0 0-.063-.51z"></path>
+                            </svg>
+                        </span>
+                    `;
+                break;
+
+            case 'received':
+                div.innerHTML = `
+                        <span data-icon="msg-dblcheck">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 15" width="16" height="15">
+                                <path fill="#92A58C" d="M15.01 3.316l-.478-.372a.365.365 0 0 0-.51.063L8.666 9.879a.32.32 0 0 1-.484.033l-.358-.325a.319.319 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.361.125.484-.033l6.272-8.048a.366.366 0 0 0-.064-.512zm-4.1 0l-.478-.372a.365.365 0 0 0-.51.063L4.566 9.879a.32.32 0 0 1-.484.033L1.891 7.769a.366.366 0 0 0-.515.006l-.423.433a.364.364 0 0 0 .006.514l3.258 3.185c.143.14.361.125.484-.033l6.272-8.048a.365.365 0 0 0-.063-.51z"></path>
+                            </svg>
+                        </span>
+                    `;
+                break;
+
+            case 'read':
+                div.innerHTML = `
+                        <span data-icon="msg-dblcheck-ack">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 15" width="16" height="15">
+                                <path fill="#4FC3F7" d="M15.01 3.316l-.478-.372a.365.365 0 0 0-.51.063L8.666 9.879a.32.32 0 0 1-.484.033l-.358-.325a.319.319 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.361.125.484-.033l6.272-8.048a.366.366 0 0 0-.064-.512zm-4.1 0l-.478-.372a.365.365 0 0 0-.51.063L4.566 9.879a.32.32 0 0 1-.484.033L1.891 7.769a.366.366 0 0 0-.515.006l-.423.433a.364.364 0 0 0 .006.514l3.258 3.185c.143.14.361.125.484-.033l6.272-8.048a.365.365 0 0 0-.063-.51z"></path>
+                            </svg>
+                        </span>
+                    `;
+                break;
+
+        }
+
+        return div;
+
+    }
+
 }
