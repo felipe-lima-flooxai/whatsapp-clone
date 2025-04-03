@@ -1,0 +1,5 @@
+Ambas não funcionam porque o Cloud Firestore não aceita mais fazer deploy nas Functions com nodejs v8.
+Mas codei igual o vídeo ainda assim e deu pra entender mais ou menos como funcionava.
+PS: da pra baixar no nodejs v8 o firebase-tools na versão 7. A versão 3.14 igual a do vídeo não funciona.
+
+PS2: esse código aqui precisa ser totalmente refeito fora de nodejs v8 e as versões antigas pra krl das outras dependencias.
