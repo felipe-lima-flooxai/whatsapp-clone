@@ -103,9 +103,7 @@ export class Message extends Model{
     
                 }
 
-                div.querySelector(".btn-message-send").on("click", e=>{
-                    console.log("enviar mensagem");
-                });
+                
 
                 break;
 
@@ -290,6 +288,72 @@ export class Message extends Model{
                         </div>
                     </div>
                 `;
+
+                if(this.photo){
+                    let img = div.querySelector(".message-photo");
+                    img.src = this.photo;
+                    img.show();
+                }
+
+                let audioEl = div.querySelector("audio");
+                let loadEl = div.querySelector(".audio-load");
+                let btnPlay = div.querySelector(".audio-play");
+                let btnPause = div.querySelector(".audio-pause");
+                let inputRange = div.querySelector("[type=range]");
+                let audioDuration = div.querySelector('.message-audio-duration');
+
+                audioEl.onloadeddata = e=>{
+                    loadEl.hide();
+                    btnPlay.show();
+
+                }
+
+                audioEl.onplay = e => {
+                    btnPlay.hide();
+                    btnPause.show();
+
+                }
+
+                audioEl.onpause = e => {
+                    audioDuration.innerHTML = Format.toTime(this.duration * 1000);
+                    btnPlay.show();
+                    btnPause.hide();
+                    
+                }
+
+                audioEl.onended = e =>{
+                    audioEl.currentTime = 0;
+                }
+
+                audioEl.ontimeupdate = e => {
+
+                    btnPlay.hide();
+                    btnPause.hide();
+
+                    audioDuration.innerHTML = Format.toTime(audioEl.currentTime * 1000);
+                    inputRange.value = (audioEl.currentTime * 100) / this.duration;
+
+                    if (audioEl.paused) {
+                        btnPlay.show();
+                    } else {    
+                        btnPause.show();
+                    }
+                    
+                }
+
+                btnPlay.on("click", e => {
+                    audioEl.play();
+                });
+
+                
+                btnPause.on("click", e => {
+                    audioEl.pause();
+                });
+
+                inputRange.on("change", e=>{
+                    audioEl.currentTime = (inputRange.value * this.duration/100);
+                });
+
                 break;
 
             default:
@@ -429,8 +493,25 @@ export class Message extends Model{
                 });
 
         });
+    }
 
-        
+    static sendAudio(chatId, from, file, metadata, photo){
+
+        return Message.send(chatId, from, "audio", "").then(msgRef=>{
+            Message.upload(file, from).then(snapshot=>{
+                let downloadFile = snapshot.downloadURL;
+
+                msgRef.set({
+                    content: downloadFile,
+                    size: file.size,
+                    fileType: file.type,
+                    status: 'sent',
+                    photo,
+                    duration : metadata.duration
+                }, {merge:true});
+
+            })
+        });
 
     }
 
